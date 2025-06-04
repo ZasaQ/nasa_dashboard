@@ -28,39 +28,47 @@ st.markdown(f"""
 
 with st.expander("ℹ️ README - Dashboard description"):
     st.markdown("""
-    ### Dashboard: Report on Meteorites, Bolides, and Fireballs
+    ### Dashboard: Space Object Impacts and Encounters
 
-    **Goal:** A comprehensive analysis of phenomena related to space objects entering Earth's atmosphere — both meteorites that struck Earth, and bright fireballs/bolides.  
-    The dashboard allows for exploration of temporal trends, geographic locations, mass, classification, and impact energy.
+    **Goal:**  
+    A comprehensive interactive dashboard analyzing objects that have entered Earth’s atmosphere or passed nearby — including meteorites, fireballs/bolides, and near-Earth asteroids (NEOs).  
+    The tool provides insight into their physical properties, temporal patterns, spatial distribution, and potential threat level.
 
     **Data Scope:**
-    - **Meteorites**: Historical meteorite landings by classification and mass
-    - **Bolides and Fireballs**: Extremely bright meteors that exploded in the atmosphere — including their location, energy, speed, and explosion height
+    - **Meteorites**: Landed meteorites categorized by year, location, mass, and classification.
+    - **Bolides and Fireballs**: High-energy atmospheric events (bright meteors) analyzed by energy, speed, height, and location.
+    - **NEOs (Near-Earth Objects)**: Asteroids and comets with close Earth approaches, analyzed by size, velocity, distance, and hazard level.
 
     **Data Sources:**
     - [NASA Open Data - Meteorite Landings Dataset](https://data.nasa.gov/dataset/meteorite-landings)
-    - [NASA JPL Fireball and Bolide Reports](https://www.kaggle.com/datasets/mexwell/nasa-fireball-and-bolide-reports/data)
+    - [NASA - Fireball and Bolide Reports (Kaggle)](https://www.kaggle.com/datasets/mexwell/nasa-fireball-and-bolide-reports/data)
+    - [NASA - Nearest Earth Objects (Kaggle)](https://www.kaggle.com/datasets/sameepvani/nasa-nearest-earth-objects/data)
 
-    **Key Indicators (Meteorites):**
-    - Number of meteorites over time
-    - Meteorite mass (in grams)
-    - Meteorite classification (recclass)
-    - Geographic location of landings
-
-    **Key Indicators (Bolides):**
-    - Number of bolides over time
-    - Impact energy (kt)
-    - Entry speed (km/s)
-    - Explosion height (km)
-    - Event location and altitude
+    **Key Indicators:**
+    - **Meteorites**:
+        - Number and distribution over time
+        - Mass (g) and classification (`recclass`)
+        - Global landing locations
+    - **Bolides and Fireballs**:
+        - Yearly frequency of events
+        - Explosion energy (kt), entry speed (km/s), and explosion height (km)
+        - Geographic location and severity
+    - **NEOs**:
+        - Discovery trends over time
+        - Estimated size (mean diameter)
+        - Relative velocity vs. miss distance
+        - Potential hazard classification and brightness
 
     **Filters and Interactions:**
-    - Year range (for meteorites and bolides)
-    - Event type (Fell / Found)
-    - Dynamic theme switching (light / dark)
-    - Thematic tab switching (meteorites / bolides)
+    - Year range selection for all datasets
+    - Meteorite event type (Fell vs. Found)
+    - Inner Impact Energy filter for bolides
+    - Hazard filter for NEOs
+    - Thematic tab navigation (Meteorites / Bolides / NEOs)
+    - Theme switching (light/dark)
 
-    **Technologies Used:** Streamlit, Plotly, Pandas
+    **Technologies Used:**  
+    Streamlit, Plotly, Pandas, Python
     """)
 
 tabs = st.tabs(["🌑 Meteorites", "☄️ Bolides and Fireballs", "🌍 Near-Earth Objects"])
@@ -79,18 +87,25 @@ with tabs[0]:
     df['year'] = df['year'].astype(int)
 
     st.sidebar.header("📅 Filters - Meteorites")
-    year_range = st.sidebar.slider("Year range (meteorites):", int(df['year'].min()), 2025, (2010, 2024))
+    year_range = st.sidebar.slider("Year range (meteorites):", int(df['year'].min()), 2025, (2000, 2024))
     fall_type = st.sidebar.multiselect("Event type:", df['fall'].unique(), default=list(df['fall'].unique()))
     df_filtered = df[(df['year'] >= year_range[0]) & (df['year'] <= year_range[1]) & (df['fall'].isin(fall_type))]
 
-    st.header("🕓 Meteorites Trend per Year")
-    timeline = df_filtered.groupby("year").size().reset_index(name="count")
+    st.header("🕓 Meteorites Trend per Year by Event Type")
+    timeline = df_filtered.groupby(["year", "fall"]).size().reset_index(name="count")
     fig_timeline = px.line(
         timeline,
         x="year",
         y="count",
+        color="fall",
         markers=True,
-        template=plotly_template
+        template=plotly_template,
+        title="Meteorite Landings per Year by Event Type",
+        labels={
+            "year": "Year",
+            "count": "Number of Meteorites",
+            "fall": "Event Type"
+        }
     )
     st.plotly_chart(fig_timeline, use_container_width=True)
 
@@ -228,18 +243,20 @@ with tabs[2]:
 
     st.header("🕓 NEOs Discoveries per Year")
     neo_count_per_year = (
-        df_neo_filtered.groupby("year").size().reset_index(name="count")
+        df_neo_filtered.groupby(["year", "hazardous"]).size().reset_index(name="count")
     )
     fig_neo_per_year = px.line(
         neo_count_per_year,
         x="year",
         y="count",
-        title="Number of NEOs Discovered per Year",
+        color="hazardous",
         markers=True,
+        title="Number of NEOs Discovered per Year",
         template=plotly_template,
         labels={
             "year": "Year",
-            "count": "Number of NEOs"
+            "count": "Number of NEOs",
+            "hazardous": "Potentially Hazardous"
         }
     )
     st.plotly_chart(fig_neo_per_year, use_container_width=True)
@@ -261,6 +278,8 @@ with tabs[2]:
         x="relative_velocity",
         y="miss_distance",
         color="hazardous",
+        opacity=0.4,
+        size_max=3,
         title="Velocity vs. Miss Distance of NEOs",
         template=plotly_template,
         labels={
@@ -272,22 +291,26 @@ with tabs[2]:
     st.plotly_chart(fig_velocity_distance, use_container_width=True)
 
     st.header("☄️ Size vs. Absolute Magnitude")
+    bins = [10, 15, 20, 25, 30, 35]
+    labels = ["10-15", "15-20", "20-25", "25-30", "30-35"]
+    df_neo_filtered["magnitude_group"] = pd.cut(df_neo_filtered["absolute_magnitude"], bins=bins, labels=labels)
+
     fig_size_brightness = px.violin(
         df_neo_filtered,
-        x="hazardous",
+        x="magnitude_group",
         y="mean_diameter",
         color="hazardous",
         box=True,
         points=False,
-        title="NEO Diameter Distribution by Hazardous Status",
+        title="NEO Diameter Distribution by Absolute Magnitude Group",
         template=plotly_template,
         labels={
+            "magnitude_group": "Absolute Magnitude Group",
             "mean_diameter": "Mean Diameter (m)",
             "hazardous": "Potentially Hazardous"
         }
     )
     st.plotly_chart(fig_size_brightness, use_container_width=True)
-    st.warning(len(df_neo_filtered))
 
     st.header("📊 Hazardous Object Ratio")
     hazard_counts = df_neo_filtered["hazardous"].value_counts().reset_index()
