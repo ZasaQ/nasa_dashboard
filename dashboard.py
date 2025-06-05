@@ -91,7 +91,7 @@ with tabs[0]:
     fall_type = st.sidebar.multiselect("Event type:", df['fall'].unique(), default=list(df['fall'].unique()))
     df_filtered = df[(df['year'] >= year_range[0]) & (df['year'] <= year_range[1]) & (df['fall'].isin(fall_type))]
 
-    st.header("🕓 Meteorites Trend per Year by Event Type")
+    st.header("🕓 Meteorites Trend per Year")
     timeline = df_filtered.groupby(["year", "fall"]).size().reset_index(name="count")
     fig_timeline = px.line(
         timeline,
@@ -261,6 +261,18 @@ with tabs[2]:
     )
     st.plotly_chart(fig_neo_per_year, use_container_width=True)
 
+    st.header("📊 Hazardous Object Ratio")
+    hazard_counts = df_neo_filtered["hazardous"].value_counts().reset_index()
+    hazard_counts.columns = ["hazardous", "count"]
+    fig_hazard = px.pie(
+        hazard_counts,
+        names="hazardous",
+        values="count",
+        title="Proportion of Hazardous vs. Non-Hazardous NEOs",
+        template=plotly_template
+    )
+    st.plotly_chart(fig_hazard, use_container_width=True)
+
     st.header("📏 NEO Diameter Distribution")
     fig_diameter = px.histogram(
         df_neo_filtered,
@@ -273,19 +285,18 @@ with tabs[2]:
     st.plotly_chart(fig_diameter, use_container_width=True)
 
     st.header("⚡ Velocity vs. Miss Distance")
-    fig_velocity_distance = px.scatter(
+    fig_velocity_distance = px.density_heatmap(
         df_neo_filtered,
         x="relative_velocity",
         y="miss_distance",
-        color="hazardous",
-        opacity=0.4,
-        size_max=3,
-        title="Velocity vs. Miss Distance of NEOs",
+        nbinsx=50,
+        nbinsy=50,
+        color_continuous_scale="Viridis",
+        title="Velocity vs. Miss Distance of NEOs (Density)",
         template=plotly_template,
         labels={
             "relative_velocity": "Relative Velocity (km/s)",
-            "miss_distance": "Miss Distance (km)",
-            "hazardous": "Potentially Hazardous"
+            "miss_distance": "Miss Distance (km)"
         }
     )
     st.plotly_chart(fig_velocity_distance, use_container_width=True)
@@ -311,18 +322,6 @@ with tabs[2]:
         }
     )
     st.plotly_chart(fig_size_brightness, use_container_width=True)
-
-    st.header("📊 Hazardous Object Ratio")
-    hazard_counts = df_neo_filtered["hazardous"].value_counts().reset_index()
-    hazard_counts.columns = ["hazardous", "count"]
-    fig_hazard = px.pie(
-        hazard_counts,
-        names="hazardous",
-        values="count",
-        title="Proportion of Hazardous vs. Non-Hazardous NEOs",
-        template=plotly_template
-    )
-    st.plotly_chart(fig_hazard, use_container_width=True)
 
 st.markdown("---")
 st.markdown("NASA Datasets | Jan Kubowicz 2025")
