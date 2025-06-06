@@ -101,7 +101,7 @@ with tabs[0]:
             """
         )
 
-    # Invalid data {int(df['year'].max())}
+    # Invalid data {int(df['year'].max())} max = 2101
 
     df = pd.read_csv("data/meteorite_landings.csv")
     df = df.dropna(subset=['year', 'mass (g)', 'reclat', 'reclong'])
