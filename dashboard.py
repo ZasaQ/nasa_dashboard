@@ -218,7 +218,7 @@ with tabs[1]:
     )
     st.plotly_chart(fig_year_line, use_container_width=True)
 
-    st.header("🌍 Bolide Location Map")
+    st.header("🌍 Bolides Location Map")
     energy_range = st.slider(
         "⚡ Impact energy range (kt):",
         min_value=float(df_bolides_filtered["Impact energy (kt)"].min()),
@@ -246,10 +246,11 @@ with tabs[1]:
     )
     st.plotly_chart(fig_map_bolides, use_container_width=True)
 
-    st.header("💥 Impact Energy")
+    st.header("💥 Bolides Impact Energy")
     fig_hist_bolides = px.histogram(
         df_bolides_filtered,
         x="Impact energy (kt)",
+        log_y=True,
         nbins=50,
         template=plotly_template
     )
@@ -283,8 +284,9 @@ with tabs[2]:
         max_value=int(df_neo["year"].max()),
         value=(2010, 2020)
     )
+    hazardous_type = st.sidebar.multiselect('Hazardous type:', df_neo['hazardous'].unique(), default=list(df_neo['hazardous'].unique()))
     df_neo_filtered = df_neo[
-        (df_neo["year"] >= year_range_neo[0]) & (df_neo["year"] <= year_range_neo[1])
+        (df_neo['year'] >= year_range_neo[0]) & (df_neo['year'] <= year_range_neo[1]) & df_neo['hazardous'].isin(hazardous_type)
     ]
 
     st.header("🕓 NEOs Discoveries per Year")
