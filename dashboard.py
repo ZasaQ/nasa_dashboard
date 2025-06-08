@@ -246,57 +246,49 @@ with tabs[1]:
     )
     st.plotly_chart(fig_map_bolides, use_container_width=True)
 
-    st.header("💥 Bolides Impact Energy")
-    fig_hist_bolides = px.histogram(
-        df_bolides_filtered,
-        x="Impact energy (kt)",
-        log_y=True,
-        nbins=50,
-        template=plotly_template
+    st.header("📊 Bolides Metrics Over Time")
+    resample_freq = st.radio(
+        "Select aggregation frequency:",
+        options=["Yearly", "Monthly"],
+        index=0,
+        horizontal=True
     )
-    st.plotly_chart(fig_hist_bolides, use_container_width=True)
+    selected_metrics = st.multiselect(
+        "Select metrics to display:",
+        options=["Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"],
+        default=["Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"]
+    )
+    df_bolides_filtered["Date/Time"] = pd.to_datetime(df_bolides_filtered["Date/Time"], errors="coerce")
+    df_multi = df_bolides_filtered.dropna(subset=["Date/Time"] + selected_metrics).copy()
+    start_year, end_year = year_range_bolide
+    df_multi = df_multi[
+        (df_multi["Date/Time"].dt.year >= start_year) &
+        (df_multi["Date/Time"].dt.year <= end_year)
+    ]
+    rule = "M" if resample_freq == "Monthly" else "Y"
+    df_multi = df_multi.set_index("Date/Time").resample(rule).sum(numeric_only=True).reset_index()
+    df_melted = df_multi.melt(
+        id_vars=["Date/Time"],
+        value_vars=selected_metrics,
+        var_name="Metric",
+        value_name="Value"
+    )
+    fig_multi_bar = px.bar(
+        df_melted,
+        x="Date/Time",
+        y="Value",
+        color="Metric",
+        barmode="group",
+        template=plotly_template,
+        title="Bolides Metrics Over Time",
+        labels={"Date/Time": "Date", "Value": "Value"}
+    )
+    st.plotly_chart(fig_multi_bar, use_container_width=True)
 
-    st.subheader("🔝 Top 10 Bolides by Radiated Energy")
+    st.header("🔝 Top 10 Bolides by Metrics")
     top_radiated = df_bolides.dropna(subset=["Radiated Energy (e10 J)"])
     top_radiated = top_radiated.sort_values("Radiated Energy (e10 J)", ascending=False).head(10)
     st.dataframe(top_radiated[["Date/Time", "Radiated Energy (e10 J)", "Impact energy (kt)", "Velocity (km/s)"]])
-    fig_radiated = px.bar(
-        top_radiated,
-        x="Date/Time",
-        y="Radiated Energy (e10 J)",
-        hover_data=["Impact energy (kt)", "Velocity (km/s)"],
-        template=plotly_template,
-        title="Top 10 Bolides by Radiated Energy"
-    )
-    st.plotly_chart(fig_radiated, use_container_width=True)
-
-    st.subheader("💥 Top 10 Bolides by Impact Energy")
-    top_impact = df_bolides.dropna(subset=["Impact energy (kt)"])
-    top_impact = top_impact.sort_values("Impact energy (kt)", ascending=False).head(10)
-    st.dataframe(top_impact[["Date/Time", "Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"]])
-    fig_impact = px.bar(
-        top_impact,
-        x="Date/Time",
-        y="Impact energy (kt)",
-        hover_data=["Radiated Energy (e10 J)", "Velocity (km/s)"],
-        template=plotly_template,
-        title="Top 10 Bolides by Impact Energy"
-    )
-    st.plotly_chart(fig_impact, use_container_width=True)
-
-    st.subheader("🚀 Top 10 Bolides by Velocity")
-    top_velocity = df_bolides.dropna(subset=["Velocity (km/s)"])
-    top_velocity = top_velocity.sort_values("Velocity (km/s)", ascending=False).head(10)
-    st.dataframe(top_velocity[["Date/Time", "Velocity (km/s)", "Impact energy (kt)", "Radiated Energy (e10 J)"]])
-    fig_velocity = px.bar(
-        top_velocity,
-        x="Date/Time",
-        y="Velocity (km/s)",
-        hover_data=["Impact energy (kt)", "Radiated Energy (e10 J)"],
-        template=plotly_template,
-        title="Top 10 Bolides by Velocity"
-    )
-    st.plotly_chart(fig_velocity, use_container_width=True)
 
 
 with tabs[2]:
