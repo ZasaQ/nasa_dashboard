@@ -256,6 +256,48 @@ with tabs[1]:
     )
     st.plotly_chart(fig_hist_bolides, use_container_width=True)
 
+    st.subheader("🔝 Top 10 Bolides by Radiated Energy")
+    top_radiated = df_bolides.dropna(subset=["Radiated Energy (e10 J)"])
+    top_radiated = top_radiated.sort_values("Radiated Energy (e10 J)", ascending=False).head(10)
+    st.dataframe(top_radiated[["Date/Time", "Radiated Energy (e10 J)", "Impact energy (kt)", "Velocity (km/s)"]])
+    fig_radiated = px.bar(
+        top_radiated,
+        x="Date/Time",
+        y="Radiated Energy (e10 J)",
+        hover_data=["Impact energy (kt)", "Velocity (km/s)"],
+        template=plotly_template,
+        title="Top 10 Bolides by Radiated Energy"
+    )
+    st.plotly_chart(fig_radiated, use_container_width=True)
+
+    st.subheader("💥 Top 10 Bolides by Impact Energy")
+    top_impact = df_bolides.dropna(subset=["Impact energy (kt)"])
+    top_impact = top_impact.sort_values("Impact energy (kt)", ascending=False).head(10)
+    st.dataframe(top_impact[["Date/Time", "Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"]])
+    fig_impact = px.bar(
+        top_impact,
+        x="Date/Time",
+        y="Impact energy (kt)",
+        hover_data=["Radiated Energy (e10 J)", "Velocity (km/s)"],
+        template=plotly_template,
+        title="Top 10 Bolides by Impact Energy"
+    )
+    st.plotly_chart(fig_impact, use_container_width=True)
+
+    st.subheader("🚀 Top 10 Bolides by Velocity")
+    top_velocity = df_bolides.dropna(subset=["Velocity (km/s)"])
+    top_velocity = top_velocity.sort_values("Velocity (km/s)", ascending=False).head(10)
+    st.dataframe(top_velocity[["Date/Time", "Velocity (km/s)", "Impact energy (kt)", "Radiated Energy (e10 J)"]])
+    fig_velocity = px.bar(
+        top_velocity,
+        x="Date/Time",
+        y="Velocity (km/s)",
+        hover_data=["Impact energy (kt)", "Radiated Energy (e10 J)"],
+        template=plotly_template,
+        title="Top 10 Bolides by Velocity"
+    )
+    st.plotly_chart(fig_velocity, use_container_width=True)
+
 
 with tabs[2]:
     with st.expander("ℹ️ README - Nearest Earth Objects (NEO)"):
