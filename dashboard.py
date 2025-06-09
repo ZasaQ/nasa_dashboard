@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-df = pd.read_csv("data/meteorite_landings.csv")
+df_meteorites = pd.read_csv("data/meteorite_landings.csv")
 
-df = df.dropna(subset=['year', 'mass (g)', 'reclat', 'reclong'])
-df['year'] = df['year'].astype(int)
+df_meteorites = df_meteorites.dropna(subset=['year', 'mass (g)', 'reclat', 'reclong'])
+df_meteorites['year'] = df_meteorites['year'].astype(int)
 
 theme = st.sidebar.selectbox("🎨 Choose theme: ", ["Light", "Dark"])
 if theme == "Light":
@@ -82,9 +82,9 @@ with tabs[0]:
             This dashboard presents an interactive analysis and visualization of meteorites that have fallen or been found on Earth. It allows you to explore global meteorite events by time, mass, location, and classification. Filters and visual tools help uncover trends in meteorite activity over the years.
 
             #### 📋 Dataset Overview
-            - **Total entries**: {len(df):,}
-            - **Entries with complete data**: {len(df.dropna(subset=['year', 'mass (g)', 'reclat', 'reclong'])):,}
-            - **Year range**: {int(df['year'].min())} - 2013
+            - **Total entries**: {len(df_meteorites):,}
+            - **Entries with complete data**: {len(df_meteorites.dropna(subset=['year', 'mass (g)', 'reclat', 'reclong'])):,}
+            - **Year range**: {int(df_meteorites['year'].min())} - 2013
 
             #### 📦 Data Columns
             - `name`: Name of the meteorite
@@ -103,26 +103,26 @@ with tabs[0]:
 
     # Invalid data {int(df['year'].max())} max = 2101
 
-    df = pd.read_csv("data/meteorite_landings.csv")
-    df = df.dropna(subset=['year', 'mass (g)', 'reclat', 'reclong'])
-    df['year'] = df['year'].astype(int)
+    df_meteorites = pd.read_csv("data/meteorite_landings.csv")
+    df_meteorites = df_meteorites.dropna(subset=['year', 'mass (g)', 'reclat', 'reclong'])
+    df_meteorites['year'] = df_meteorites['year'].astype(int)
 
     # === Filters - Meteorites ===
     st.sidebar.header("📅 Filters - Meteorites")
-    year_range = st.sidebar.slider("Year range (meteorites):", int(df['year'].min()), 2013, (2000, 2013))
-    fall_type = st.sidebar.multiselect("Event type:", df['fall'].unique(), default=list(df['fall'].unique()))
-    df_filtered = df[(df['year'] >= year_range[0]) & (df['year'] <= year_range[1]) & (df['fall'].isin(fall_type))]
+    year_range = st.sidebar.slider("Year range (meteorites):", int(df_meteorites['year'].min()), 2013, (2000, 2013))
+    fall_type = st.sidebar.multiselect("Event type:", df_meteorites['fall'].unique(), default=list(df_meteorites['fall'].unique()))
+    df_meteorites_filtered = df_meteorites[(df_meteorites['year'] >= year_range[0]) & (df_meteorites['year'] <= year_range[1]) & (df_meteorites['fall'].isin(fall_type))]
     mass_range = st.sidebar.slider("Mass range (grams):", 
-                               float(df['mass (g)'].min()), 
-                               float(df['mass (g)'].max()), 
+                               float(df_meteorites['mass (g)'].min()), 
+                               float(df_meteorites['mass (g)'].max()), 
                                (100.0, 100000.0))
-    df_filtered = df_filtered[(df_filtered['mass (g)'] >= mass_range[0]) & (df_filtered['mass (g)'] <= mass_range[1])]
+    df_meteorites_filtered = df_meteorites_filtered[(df_meteorites_filtered['mass (g)'] >= mass_range[0]) & (df_meteorites_filtered['mass (g)'] <= mass_range[1])]
 
-    classes = st.sidebar.multiselect("Meteorite classes:", df['recclass'].unique(), default=df_filtered['recclass'].value_counts().nlargest(10).index)
-    df_filtered = df_filtered[df_filtered['recclass'].isin(classes)]
+    classes = st.sidebar.multiselect("Meteorite classes:", df_meteorites['recclass'].unique(), default=df_meteorites_filtered['recclass'].value_counts().nlargest(10).index)
+    df_meteorites_filtered = df_meteorites_filtered[df_meteorites_filtered['recclass'].isin(classes)]
 
-    st.header("🕓 Meteorites Trend per Year")
-    timeline = df_filtered.groupby(["year", "fall"]).size().reset_index(name="count")
+    st.header("🕓 Meteorites Trend Over Years")
+    timeline = df_meteorites_filtered.groupby(["year", "fall"]).size().reset_index(name="count")
     fig_timeline = px.line(
         timeline,
         x="year",
@@ -130,7 +130,6 @@ with tabs[0]:
         color="fall",
         markers=True,
         template=plotly_template,
-        title="Meteorite Landings per Year by Event Type",
         labels={
             "year": "Year",
             "count": "Number of Meteorites",
@@ -141,7 +140,7 @@ with tabs[0]:
 
     st.header("🌍 Meteorites Landing Map")
     fig_map = px.scatter_geo(
-        df_filtered,
+        df_meteorites_filtered,
         lat="reclat",
         lon="reclong",
         color="fall",
@@ -152,8 +151,8 @@ with tabs[0]:
     st.plotly_chart(fig_map, use_container_width=True)
 
     st.header("📊 Meteorites Classes")
-    top_classes = df_filtered['recclass'].value_counts().nlargest(10).index
-    df_top = df_filtered[df_filtered['recclass'].isin(top_classes)]
+    top_classes = df_meteorites_filtered['recclass'].value_counts().nlargest(10).index
+    df_top = df_meteorites_filtered[df_meteorites_filtered['recclass'].isin(top_classes)]
 
     df_counts = df_top['recclass'].value_counts().reset_index()
     df_counts.columns = ['recclass', 'count']
@@ -169,17 +168,17 @@ with tabs[0]:
     st.plotly_chart(fig_bar, use_container_width=True)
 
     st.header("🏋️ Top 10 Heaviest Meteorites")
-    top_heavy = df_filtered.nlargest(10, 'mass (g)')[['id', 'name', 'mass (g)', 'year', 'fall']]
+    top_heavy = df_meteorites_filtered.nlargest(10, 'mass (g)')[['id', 'name', 'mass (g)', 'year', 'fall']]
     st.dataframe(top_heavy)
 
     st.header("📉 Meteorites Mass Distribution")
-    fig_mass = px.histogram(df_filtered, x="mass (g)", nbins=100, log_y=True,
+    fig_mass = px.histogram(df_meteorites_filtered, x="mass (g)", nbins=100, log_y=True,
                             title="Distribution of Meteorite Masses",
                             template=plotly_template)
     st.plotly_chart(fig_mass, use_container_width=True)
 
     st.header("📈 Average Meteorite Mass per Year")
-    avg_mass = df_filtered.groupby("year")["mass (g)"].mean().reset_index()
+    avg_mass = df_meteorites_filtered.groupby("year")["mass (g)"].mean().reset_index()
     fig_avg_mass = px.line(avg_mass, x="year", y="mass (g)", markers=True,
                         title="Average Meteorite Mass per Year",
                         template=plotly_template)
