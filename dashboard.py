@@ -137,13 +137,6 @@ with tabs[0]:
 
     fall_type = st.sidebar.multiselect("Event type:", df_meteorites['fall'].unique(), default=list(df_meteorites['fall'].unique()))
 
-    mass_range = st.sidebar.slider(
-        "Mass range (grams):",
-        float(df_meteorites['mass (g)'].min()),
-        float(df_meteorites['mass (g)'].max()),
-        (100.0, 100000.0)
-    )
-
     classes = st.sidebar.multiselect(
         "Meteorite classes:",
         df_meteorites['recclass'].unique(),
@@ -153,7 +146,6 @@ with tabs[0]:
     df_meteorites_filtered = df_meteorites[
         df_meteorites['Date/Time'].dt.year.between(*year_range) &
         df_meteorites['fall'].isin(fall_type) &
-        df_meteorites['mass (g)'].between(*mass_range) &
         df_meteorites['recclass'].isin(classes)
     ].copy()
 
