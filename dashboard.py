@@ -113,9 +113,9 @@ with tabs[0]:
             **Features and Visualizations:**
             - **Yearly Trends of Meteorites:** Line chart showing the number of meteorite events per year, categorized by event type (`Fell` or `Found`).
             - **Event Type Ratio:** Pie chart comparing proportions of meteorites that were found vs. those that fell.
-            - **Meteorite Class Ratio:** Pie chart showing the top 10 most frequent meteorite classes by count.
+            - **Meteorite Class Ratio (Top 10):** Pie chart showing the top 10 most frequent meteorite classes by count.
+            - **Meteorite Class Distribution (Top 10):** Bar chart of top 10 meteorite classes by occurrence.
             - **Global Landing Map:** Geospatial scatter plot showing where meteorites landed or were discovered, sized by mass and colored by type.
-            - **Meteorite Class Bar Chart:** Bar chart of top 10 meteorite classes by occurrence.
             - **Mass Distribution by Type:** Box plot comparing mass distributions between `Fell` and `Found` meteorites (log scale).
             - **Mass Histogram:** Histogram of meteorite masses using a logarithmic Y-axis for better distribution visibility.
             - **Average Yearly Mass:** Line plot showing the average mass of meteorites per year.
@@ -189,19 +189,7 @@ with tabs[0]:
     )
     st.plotly_chart(fig_class_pie, use_container_width=True)
 
-    st.header("Meteorites Landing Map")
-    fig_map = px.scatter_geo(
-        df_meteorites_filtered,
-        lat="reclat",
-        lon="reclong",
-        color="fall",
-        size="mass (g)",
-        hover_name="name",
-        template=plotly_template
-    )
-    st.plotly_chart(fig_map, use_container_width=True)
-
-    st.header("Meteorites Classes (Top 10)")
+    st.header("Meteorites Classes Distribution (Top 10)")
     top_classes = df_meteorites_filtered['recclass'].value_counts().nlargest(10).index
     df_top = df_meteorites_filtered[df_meteorites_filtered['recclass'].isin(top_classes)].copy()
     df_counts = df_top['recclass'].value_counts().reset_index()
@@ -215,6 +203,18 @@ with tabs[0]:
         hover_data={"count": False}
     )
     st.plotly_chart(fig_bar, use_container_width=True)
+
+    st.header("Meteorites Landing Map")
+    fig_map = px.scatter_geo(
+        df_meteorites_filtered,
+        lat="reclat",
+        lon="reclong",
+        color="fall",
+        size="mass (g)",
+        hover_name="name",
+        template=plotly_template
+    )
+    st.plotly_chart(fig_map, use_container_width=True)
 
     st.header("Mass Distribution by Event Type")
     fig_box = px.box(
