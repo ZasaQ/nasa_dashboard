@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import re
 
 theme = st.sidebar.selectbox("🎨 Choose theme: ", ["Light", "Dark"])
 if theme == "Light":
@@ -447,17 +448,9 @@ with tabs[1]:
 
 
 with tabs[2]:
-    with st.expander("ℹ️ README - Nearest Earth Objects (NEO)"):
-        st.markdown("""
-        ### NEO Analysis  
-        This section analyzes near-Earth objects (asteroids) based on their physical characteristics, orbital data, and risk level.  
-        The dataset includes estimated size, velocity, miss distance, brightness, and hazard status.
-        """)
-
     df_neo = pd.read_csv("data/nearest_earth_objects.csv")
     df_neo["mean_diameter"] = (df_neo["est_diameter_min"] + df_neo["est_diameter_max"]) / 2
 
-    import re
     def extract_year(name):
         match = re.search(r"\((19|20)\d{2}", name)
         return int(match.group(0)[1:]) if match else None
@@ -465,6 +458,44 @@ with tabs[2]:
     df_neo["year"] = df_neo["name"].apply(extract_year)
     df_neo = df_neo.dropna(subset=["year"])
     df_neo["year"] = df_neo["year"].astype(int)
+
+    with st.expander("ℹ️ README - Nearest Earth Objects (NEO)"):
+        st.markdown(f"""
+        ### NEO Analysis  
+        This section analyzes near-Earth objects (asteroids) based on their physical characteristics, orbital data, and risk level.  
+        The dataset includes estimated size, velocity, miss distance, brightness, and hazard status.
+                    
+        #### Dataset Overview
+        **Base Info:**  
+        - **Total entries:** {len(df_neo):,}  
+        - **Entries with complete coordinates:** {df_neo.dropna(subset=['orbiting_body', 'relative_velocity', 'miss_distance']).shape[0]:,}
+        - **Year range in dataset:** {df_neo['year'].min()} - {df_neo['year'].max()}
+
+        **Metrics Included:**  
+        - `name`: Name of the NEO (usually includes year of discovery)
+        - `year`: Parsed year of observation or discovery
+        - `est_diameter_min`, `est_diameter_max`: Estimated size range (m)
+        - `relative_velocity`: Approach speed (km/s)
+        - `miss_distance`: Distance from Earth at closest approach (km)
+        - `absolute_magnitude`: Brightness magnitude (H)
+        - `hazardous`: Boolean flag indicating if the object is potentially hazardous
+
+        #### Charts Overview
+        **Features and Visualizations:**
+        - **NEOs Trend Over Years:** Line chart showing yearly discoveries grouped by hazard status
+        - **Hazardous Object Ratio:** Pie chart showing proportion of hazardous vs. non-hazardous objects
+        - **NEO Diameters Distribution:** Histogram (log scale) of mean diameters
+        - **Velocity vs. Miss Distance:** Density heatmap showing speed vs. closest distance
+        - **Brightness vs. Diameter:** Scatterplot highlighting hazardous objects
+        - **Cumulative NEO Discoveries:** Line chart showing total discoveries over time
+        - **Velocity Distribution:** Histogram of NEO relative velocities
+        - **Miss Distance by Hazard Type:** Box plot showing distribution of closest approaches by hazard class
+        - **Top 10 Closest Approaches:** Table of nearest NEO encounters with full metrics
+
+        #### Filters Overview
+        Use the **sidebar filters** to narrow the analysis by year range and hazardous type.  
+        All visualizations update dynamically based on your selection.
+        """)
 
     st.sidebar.header("📅 Filters - NEOs")
     year_range_neo = st.sidebar.slider(
@@ -478,7 +509,7 @@ with tabs[2]:
         (df_neo['year'] >= year_range_neo[0]) & (df_neo['year'] <= year_range_neo[1]) & df_neo['hazardous'].isin(hazardous_type)
     ]
 
-    st.header("🕓 NEOs Discoveries per Year")
+    st.header("NEOs Trend Over Years")
     neo_count_per_year = (
         df_neo_filtered.groupby(["year", "hazardous"]).size().reset_index(name="count")
     )
@@ -497,7 +528,7 @@ with tabs[2]:
     )
     st.plotly_chart(fig_neo_per_year, use_container_width=True)
 
-    st.header("📊 Hazardous Object Ratio")
+    st.header("Hazardous Object Ratio")
     hazard_counts = df_neo_filtered["hazardous"].value_counts().reset_index()
     hazard_counts.columns = ["hazardous", "count"]
     fig_hazard = px.pie(
@@ -508,7 +539,7 @@ with tabs[2]:
     )
     st.plotly_chart(fig_hazard, use_container_width=True)
 
-    st.header("📏 NEO Diameters Distribution")
+    st.header("NEO Diameters Distribution")
     fig_diameter = px.histogram(
         df_neo_filtered,
         x="mean_diameter",
@@ -519,7 +550,7 @@ with tabs[2]:
     )
     st.plotly_chart(fig_diameter, use_container_width=True)
 
-    st.header("⚡ Velocity vs. Miss Distance")
+    st.header("Velocity vs. Miss Distance")
     fig_velocity_distance = px.density_heatmap(
         df_neo_filtered,
         x="relative_velocity",
@@ -535,26 +566,66 @@ with tabs[2]:
     )
     st.plotly_chart(fig_velocity_distance, use_container_width=True)
 
-    st.header("☄️ Size vs. Absolute Magnitude")
-    bins = [10, 15, 20, 25, 30, 35]
-    labels = ["10-15", "15-20", "20-25", "25-30", "30-35"]
-    df_neo_filtered["magnitude_group"] = pd.cut(df_neo_filtered["absolute_magnitude"], bins=bins, labels=labels)
-
-    fig_size_brightness = px.violin(
+    st.header("Brightness vs. Diameter")
+    fig_brightness = px.scatter(
         df_neo_filtered,
-        x="magnitude_group",
+        x="absolute_magnitude",
         y="mean_diameter",
         color="hazardous",
-        box=True,
-        points=False,
         template=plotly_template,
         labels={
-            "magnitude_group": "Absolute Magnitude Group",
+            "absolute_magnitude": "Absolute Magnitude (H)",
             "mean_diameter": "Mean Diameter (m)",
             "hazardous": "Potentially Hazardous"
         }
     )
-    st.plotly_chart(fig_size_brightness, use_container_width=True)
+    st.plotly_chart(fig_brightness, use_container_width=True)
+
+    st.header("Cumulative NEO Discoveries")
+    df_cumulative = (
+        df_neo_filtered.groupby("year").size().cumsum().reset_index(name="cumulative_count")
+    )
+    fig_cumulative = px.line(
+        df_cumulative,
+        x="year",
+        y="cumulative_count",
+        template=plotly_template,
+        labels={"year": "Year", "cumulative_count": "Cumulative NEO Discoveries"}
+    )
+    st.plotly_chart(fig_cumulative, use_container_width=True)
+
+    st.header("Velocity Distribution")
+    fig_velocity_hist = px.histogram(
+        df_neo_filtered,
+        x="relative_velocity",
+        nbins=50,
+        template=plotly_template,
+        labels={"relative_velocity": "Relative Velocity (km/s)"}
+    )
+    st.plotly_chart(fig_velocity_hist, use_container_width=True)
+
+    st.header("📦 Miss Distance by Hazard Type")
+    fig_miss_box = px.box(
+        df_neo_filtered,
+        x="hazardous",
+        y="miss_distance",
+        log_y=True,
+        color='hazardous',
+        template=plotly_template,
+        labels={
+            "hazardous": "Potentially Hazardous",
+            "miss_distance": "Miss Distance (km)"
+        }
+    )
+    st.plotly_chart(fig_miss_box, use_container_width=True)
+
+    st.header("🚨 Top 10 Closest Approaches")
+    closest_neo = df_neo_filtered.nsmallest(10, "miss_distance")[
+        ["name", "miss_distance", "relative_velocity", "absolute_magnitude", "mean_diameter", "hazardous"]
+    ]
+    closest_neo.columns = ["Name", "Miss Distance (km)", "Velocity (km/s)", "Absolute Magnitude (H)", "Mean Diameter (m)", "Hazardous"]
+    st.dataframe(closest_neo)
+
 
 st.markdown("---")
 st.markdown("NASA Datasets | Jan Kubowicz 2025")
