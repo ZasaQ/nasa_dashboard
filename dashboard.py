@@ -88,8 +88,7 @@ with tabs[0]:
             - **Total entries**: {len(df_meteorites):,}
             - **Entries with complete data**: {len(df_meteorites.dropna(subset=['Date/Time', 'mass (g)', 'reclat', 'reclong'])):,}
             - **Year range**: {df_meteorites['Date/Time'].dt.year.min()} - {df_meteorites['Date/Time'].dt.year.max()}
-
-            #### 📦 Data Columns
+            
             - `name`: Name of the meteorite
             - `id`: Unique identifier
             - `nametype`: Type of name (usually 'Valid')
@@ -209,7 +208,6 @@ with tabs[0]:
         x="Date/Time",
         y="mass (g)",
         markers=True,
-        title="Average Meteorite Mass per Year",
         template=plotly_template,
         labels={"Date/Time": "Year", "mass (g)": "Mass (g)"}
     )
@@ -217,52 +215,116 @@ with tabs[0]:
 
 
 with tabs[1]:
+    df_bolides = pd.read_csv("data/fireball_and_bolide_reports.csv", sep=";")
+    df_bolides["Date/Time"] = pd.to_datetime(df_bolides["Date/Time"].astype(str), errors="coerce", utc=True)
+    df_bolides["Year"] = df_bolides["Date/Time"].dt.tz_localize(None).dt.year
+
     with st.expander("ℹ️ README - Bolides and Fireballs"):
+        total_entries = len(df_bolides)
+        complete_entries = df_bolides.dropna(subset=["Latitude (deg.)", "Longitude (deg.)", "Date/Time"]).shape[0]
+        min_year = int(df_bolides["Date/Time"].dt.year.min())
+        max_year = int(df_bolides["Date/Time"].dt.year.max())
+
         st.markdown(
-            """
-            ### Bolides and Fireballs
-            Analysis and visualization of bolides and fireballs — their locations, impact energy, and temporal trends.
+            f"""
+            ### Bolides and Fireballs Dashboard
+
+            This dashboard provides an interactive analysis of **bolides** and **fireballs** — extremely bright meteors that often explode in the atmosphere.
+
+            **Data Source:** NASA's Fireball and Bolide Reports
+
+            #### Dataset Overview
+            **Base Info:** 
+            - **Total entries:** {total_entries:,}
+            - **Entries with complete coordinates & date:** {complete_entries:,}
+            - **Year range:** {min_year} - {max_year}
+
+            **Metrics Included:**  
+            - `Date/Time`: Timestamp of atmospheric entry
+            - `Latitude (deg.)`, `Longitude (deg.)`: Geographic coordinates of the event
+            - `Impact energy (kt)`: Kinetic energy released during atmospheric entry (kilotons of TNT)
+            - `Radiated Energy (e10 J)`: Energy radiated in 10¹⁰ Joules
+            - `Velocity (km/s)`: Entry velocity of the bolide
+            - `Altitude (km)`: Estimated altitude of the explosion
+            - `Calculated Total Impact Energy (kt)`: Total calculated energy in kilotons
+            - `Velocity components`: Includes `vx`, `vy`, `vz` in km/s (if available)
+
+            #### Charts Overview
+            **Features and Visualizations:**
+            - **Temporal Trends of Bolides:** Timeline of events per year, month and weekday.
+            - **Heatmap (Month vs. Year):** Heatmap to detect seasonal trends and event clustering.
+            - **Impact Map:** Global geospatial scatter map of fireball events with energy scaling.
+            - **Metrics Over Time:** Aggregated impact, radiated energy, and velocity over time (monthly/yearly).
+            - **Top Events Table:** Top 10 events by radiated energy with impact and velocity shown.
+            - **Velocity Distribution:** Histogram of fireball entry speeds.
+            - **Velocity vs. Impact Energy:** Bubble plot with energy-to-speed correlation.
+            - **Cumulative Energy:** Line chart showing cumulative radiated energy growth over time.
+            
+            **Sidebar Filters**
+            Use the **sidebar filters** to narrow the analysis by year range.  
+            All visualizations update dynamically based on your selection.
             """
         )
-
-    df_bolides = pd.read_csv("data/fireball_and_bolide_reports.csv", sep=";")
-    df_bolides["Date/Time"] = df_bolides["Date/Time"].astype(str)
-    df_bolides["Date/Time"] = pd.to_datetime(df_bolides["Date/Time"], errors="coerce", utc=True)
-    df_bolides["Year"] = df_bolides["Date/Time"].dt.tz_localize(None).dt.year
 
     st.sidebar.header("📅 Filters - Bolides and Fireballs")
     df_bolides_clean = df_bolides.dropna(subset=["Latitude (deg.)", "Longitude (deg.)"])
     year_range_bolide = st.sidebar.slider("Year range (bolides and fireballs):", int(df_bolides_clean["Year"].min()), int(df_bolides_clean["Year"].max()), (2010, 2020))
     df_bolides_filtered = df_bolides_clean[(df_bolides_clean["Year"] >= year_range_bolide[0]) & (df_bolides_clean["Year"] <= year_range_bolide[1])]
 
-    st.header("🕓 Bolides Trend per Year")
-    df_bolides_by_year = df_bolides_filtered.dropna(subset=["Year"])
-    bolides_per_year = df_bolides_by_year.groupby("Year").size().reset_index(name="Count")
-    fig_year_line = px.line(
-        bolides_per_year,
-        x="Year",
+    st.header("Temporal Trends of Bolides")
+    df_bolides_filtered["Date/Time"] = pd.to_datetime(df_bolides_filtered["Date/Time"], errors="coerce", utc=True)
+    df_yearly = df_bolides_filtered.set_index("Date/Time").resample("Y").size().reset_index(name="Count")
+    fig_year_datetime = px.line(
+        df_yearly,
+        x="Date/Time",
         y="Count",
         markers=True,
-        title="Number of bolide observations per year",
-        template=plotly_template
+        template=plotly_template,
+        labels={"Date/Time": "Year", "Count": "Count"},
+        title="Yearly Bolides Distribution"
     )
-    st.plotly_chart(fig_year_line, use_container_width=True)
+    st.plotly_chart(fig_year_datetime, use_container_width=True)
+    df_bolides_filtered["Month"] = df_bolides_filtered["Date/Time"].dt.month
+    df_bolides_filtered["DayOfWeek"] = df_bolides_filtered["Date/Time"].dt.day_name()
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_month = px.histogram(
+            df_bolides_filtered, 
+            x="Month", nbins=12,
+            title="Monthly Bolids Distribution",
+            template=plotly_template,
+            labels={"Month": "Month", "count": "Event Count"}
+        )
+        st.plotly_chart(fig_month, use_container_width=True)
+    with col2:
+        fig_day = px.histogram(
+            df_bolides_filtered,
+            x="DayOfWeek",
+            category_orders={"DayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]},
+            title="Day of Week Bolids Distribution",
+            template=plotly_template,
+            labels={"DayOfWeek": "Day of Week", "count": "Event Count"}
+        )
+        st.plotly_chart(fig_day, use_container_width=True)
 
-    st.header("🌍 Bolides Location Map")
-    energy_range = st.slider(
-        "⚡ Impact energy range (kt):",
-        min_value=float(df_bolides_filtered["Impact energy (kt)"].min()),
-        max_value=float(df_bolides_filtered["Impact energy (kt)"].max()),
-        value=(
-            float(df_bolides_filtered["Impact energy (kt)"].min()),
-            float(df_bolides_filtered["Impact energy (kt)"].max())
-        ),
-        step=0.1
+    st.header("Monthly Event Distribution by Year")
+    df_heat = df_bolides_filtered.copy()
+    df_heat["Month"] = df_heat["Date/Time"].dt.month
+    df_heat["Year"] = df_heat["Date/Time"].dt.year
+    heatmap_data = df_heat.groupby(["Year", "Month"]).size().unstack(fill_value=0)
+    fig_heatmap = px.imshow(
+        heatmap_data,
+        labels=dict(x="Month", y="Year", color="Event Count"),
+        x=list(range(1, 13)),
+        y=heatmap_data.index,
+        color_continuous_scale="Blues",
+        aspect="auto"
     )
-    df_bolides_filtered_map = df_bolides_filtered[
-        (df_bolides_filtered["Impact energy (kt)"] >= energy_range[0]) &
-        (df_bolides_filtered["Impact energy (kt)"] <= energy_range[1])
-    ]
+    st.plotly_chart(fig_heatmap, use_container_width=True)
+
+    st.header("Bolides Location Map")
+    energy_range = st.slider("⚡ Impact energy range (kt):", float(df_bolides_filtered["Impact energy (kt)"].min()), float(df_bolides_filtered["Impact energy (kt)"].max()), step=0.1, value=(float(df_bolides_filtered["Impact energy (kt)"].min()), float(df_bolides_filtered["Impact energy (kt)"].max())))
+    df_bolides_filtered_map = df_bolides_filtered[(df_bolides_filtered["Impact energy (kt)"] >= energy_range[0]) & (df_bolides_filtered["Impact energy (kt)"] <= energy_range[1])]
     fig_map_bolides = px.scatter_geo(
         df_bolides_filtered_map,
         lat="Latitude (deg.)",
@@ -276,49 +338,63 @@ with tabs[1]:
     )
     st.plotly_chart(fig_map_bolides, use_container_width=True)
 
-    st.header("📊 Bolides Metrics Over Time")
-    resample_freq = st.radio(
-        "Select aggregation frequency:",
-        options=["Yearly", "Monthly"],
-        index=0,
-        horizontal=True
-    )
-    selected_metrics = st.multiselect(
-        "Select metrics to display:",
-        options=["Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"],
-        default=["Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"]
-    )
-    df_bolides_filtered["Date/Time"] = pd.to_datetime(df_bolides_filtered["Date/Time"], errors="coerce")
+    st.header("Bolides Metrics Over Years")
+    resample_freq = st.radio("Select aggregation frequency:", options=["Yearly", "Monthly"], index=0, horizontal=True)
+    selected_metrics = st.multiselect("Select metrics to display:", options=["Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"], default=["Impact energy (kt)", "Radiated Energy (e10 J)", "Velocity (km/s)"])
     df_multi = df_bolides_filtered.dropna(subset=["Date/Time"] + selected_metrics).copy()
-    start_year, end_year = year_range_bolide
-    df_multi = df_multi[
-        (df_multi["Date/Time"].dt.year >= start_year) &
-        (df_multi["Date/Time"].dt.year <= end_year)
-    ]
+    df_multi = df_multi[(df_multi["Date/Time"].dt.year >= year_range_bolide[0]) & (df_multi["Date/Time"].dt.year <= year_range_bolide[1])]
     rule = "M" if resample_freq == "Monthly" else "Y"
     df_multi = df_multi.set_index("Date/Time").resample(rule).sum(numeric_only=True).reset_index()
-    df_melted = df_multi.melt(
-        id_vars=["Date/Time"],
-        value_vars=selected_metrics,
-        var_name="Metric",
-        value_name="Value"
-    )
+    df_melted = df_multi.melt(id_vars=["Date/Time"], value_vars=selected_metrics, var_name="Metric", value_name="Value")
     fig_multi_bar = px.bar(
-        df_melted,
+        df_melted, 
         x="Date/Time",
         y="Value",
         color="Metric",
         barmode="group",
         template=plotly_template,
-        title="Bolides Metrics Over Time",
         labels={"Date/Time": "Date", "Value": "Value"}
     )
     st.plotly_chart(fig_multi_bar, use_container_width=True)
 
-    st.header("🔝 Top 10 Bolides by Metrics")
-    top_radiated = df_bolides.dropna(subset=["Radiated Energy (e10 J)"])
-    top_radiated = top_radiated.sort_values("Radiated Energy (e10 J)", ascending=False).head(10)
+    st.header("Top 10 Bolides by Various Metrics")
+    top_radiated = df_bolides.dropna(subset=["Radiated Energy (e10 J)"]).sort_values("Radiated Energy (e10 J)", ascending=False).head(10)
     st.dataframe(top_radiated[["Date/Time", "Radiated Energy (e10 J)", "Impact energy (kt)", "Velocity (km/s)"]])
+
+    st.header("🏃 Velocity Distribution")
+    fig_velocity = px.histogram(
+        df_bolides_filtered,
+        x="Velocity (km/s)",
+        nbins=30,
+        template=plotly_template,
+        labels={"Velocity (km/s)": "Velocity (km/s)"}
+    )
+    st.plotly_chart(fig_velocity, use_container_width=True)
+
+    st.header("Velocity vs. Impact Energy")
+    df_scatter = df_bolides_filtered.dropna(subset=["Velocity (km/s)", "Impact energy (kt)"])
+    fig_scatter = px.scatter(
+        df_scatter,
+        x="Velocity (km/s)",
+        y="Impact energy (kt)",
+        size="Radiated Energy (e10 J)",
+        color="Radiated Energy (e10 J)",
+        template=plotly_template,
+        labels={"Velocity (km/s)": "Velocity (km/s)", "Impact energy (kt)": "Impact Energy (kt)"}
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    st.header("Cumulative Radiated Energy Over Time")
+    df_cumulative = df_bolides_filtered.sort_values("Date/Time").copy()
+    df_cumulative["Cumulative Energy"] = df_cumulative["Radiated Energy (e10 J)"].cumsum()
+    fig_cumulative = px.line(
+        df_cumulative,
+        x="Date/Time",
+        y="Cumulative Energy",
+        template=plotly_template,
+        labels={"Date/Time": "Year", "Cumulative Energy": "Cumulative Energy"}
+    )
+    st.plotly_chart(fig_cumulative, use_container_width=True)
 
 
 with tabs[2]:
@@ -363,7 +439,6 @@ with tabs[2]:
         y="count",
         color="hazardous",
         markers=True,
-        title="Number of NEOs Discovered per Year",
         template=plotly_template,
         labels={
             "year": "Year",
@@ -380,18 +455,16 @@ with tabs[2]:
         hazard_counts,
         names="hazardous",
         values="count",
-        title="Proportion of Hazardous vs. Non-Hazardous NEOs",
         template=plotly_template
     )
     st.plotly_chart(fig_hazard, use_container_width=True)
 
-    st.header("📏 NEO Diameter Distribution")
+    st.header("📏 NEO Diameters Distribution")
     fig_diameter = px.histogram(
         df_neo_filtered,
         x="mean_diameter",
         nbins=50,
         log_y=True,
-        title="Distribution of NEO Diameters (meters)",
         template=plotly_template,
         labels={"mean_diameter": "Estimated Mean Diameter (m)"}
     )
@@ -405,7 +478,6 @@ with tabs[2]:
         nbinsx=50,
         nbinsy=50,
         color_continuous_scale="Viridis",
-        title="Velocity vs. Miss Distance of NEOs (Density)",
         template=plotly_template,
         labels={
             "relative_velocity": "Relative Velocity (km/s)",
@@ -426,7 +498,6 @@ with tabs[2]:
         color="hazardous",
         box=True,
         points=False,
-        title="NEO Diameter Distribution by Absolute Magnitude Group",
         template=plotly_template,
         labels={
             "magnitude_group": "Absolute Magnitude Group",
