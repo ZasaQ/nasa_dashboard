@@ -77,18 +77,28 @@ with tabs[0]:
     df_meteorites['Date/Time'] = pd.to_datetime(df_meteorites['year'], format='%Y', errors='coerce')
     df_meteorites = df_meteorites[df_meteorites['mass (g)'] > 0].copy()
 
-    with st.expander("ℹ️ README & Data Overview - Meteorites"):
+    with st.expander("ℹ️ README - Meteorites"):
+        total_entries = len(df_meteorites)
+        complete_entries = len(df_meteorites.dropna(subset=['Date/Time', 'mass (g)', 'reclat', 'reclong']))
+        min_year = int(df_meteorites['Date/Time'].dt.year.min())
+        max_year = int(df_meteorites['Date/Time'].dt.year.max())
+
         st.markdown(
             f"""
             ### Meteorites
 
-            This dashboard presents an interactive analysis and visualization of meteorites that have fallen or been found on Earth. It allows you to explore global meteorite events by time, mass, location, and classification. Filters and visual tools help uncover trends in meteorite activity over the years.
+            This dashboard presents an interactive analysis and visualization of meteorites that have fallen or been found on Earth. 
+            It allows you to explore global meteorite events by time, mass, location, and classification. 
+            Filters and visual tools help uncover trends in meteorite activity over the years.
+            The data is based on public records and includes both confirmed meteorite falls and finds.
 
-            #### 📋 Dataset Overview
-            - **Total entries**: {len(df_meteorites):,}
-            - **Entries with complete data**: {len(df_meteorites.dropna(subset=['Date/Time', 'mass (g)', 'reclat', 'reclong'])):,}
-            - **Year range**: {df_meteorites['Date/Time'].dt.year.min()} - {df_meteorites['Date/Time'].dt.year.max()}
+            #### Dataset Overview
+            **Base Info:** 
+            - **Total entries**: {total_entries:,}
+            - **Entries with complete coordinates & date:**: {complete_entries:,}
+            - **Year range**: {min_year} - {max_year}
             
+            **Metrics Included:**  
             - `name`: Name of the meteorite
             - `id`: Unique identifier
             - `nametype`: Type of name (usually 'Valid')
@@ -99,11 +109,24 @@ with tabs[0]:
             - `reclat`, `reclong`: Geographic coordinates
             - `GeoLocation`: String representation of location
 
-            The data is based on public records and includes both confirmed meteorite falls and finds.
+            #### Charts Overview
+            **Features and Visualizations:**
+            - **Yearly Trends of Meteorites:** Line chart showing the number of meteorite events per year, categorized by event type (`Fell` or `Found`).
+            - **Event Type Ratio:** Pie chart comparing proportions of meteorites that were found vs. those that fell.
+            - **Meteorite Class Ratio:** Pie chart showing the top 10 most frequent meteorite classes by count.
+            - **Global Landing Map:** Geospatial scatter plot showing where meteorites landed or were discovered, sized by mass and colored by type.
+            - **Meteorite Class Bar Chart:** Bar chart of top 10 meteorite classes by occurrence.
+            - **Mass Distribution by Type:** Box plot comparing mass distributions between `Fell` and `Found` meteorites (log scale).
+            - **Mass Histogram:** Histogram of meteorite masses using a logarithmic Y-axis for better distribution visibility.
+            - **Average Yearly Mass:** Line plot showing the average mass of meteorites per year.
+            - **Top 10 Heaviest Meteorites Table:** Data table listing the heaviest meteorites by mass with their names, year, and event type.
+
+            #### Filters Overview
+            Use the **sidebar filters** to narrow the analysis by year range, event type and meteroit classess.  
+            All visualizations update dynamically based on your selection.
             """
         )
 
-    # === Filters - Meteorites ===
     st.sidebar.header("📅 Filters - Meteorites")
     year_range = st.sidebar.slider(
         "Year range (meteorites):",
@@ -134,7 +157,7 @@ with tabs[0]:
         df_meteorites['recclass'].isin(classes)
     ].copy()
 
-    st.header("🕓 Meteorites Trend Over Years")
+    st.header("Yearly Trends of Meteorites")
     timeline = (
         df_meteorites_filtered
         .groupby([pd.Grouper(key='Date/Time', freq='Y'), 'fall'])
@@ -152,7 +175,29 @@ with tabs[0]:
     )
     st.plotly_chart(fig_timeline, use_container_width=True)
 
-    st.header("🌍 Meteorites Landing Map")
+    st.header("Event Type Ratio")
+    fall_pie = df_meteorites_filtered['fall'].value_counts().reset_index()
+    fall_pie.columns = ['fall', 'count']
+    fig_fall_pie = px.pie(
+        fall_pie,
+        names='fall',
+        values='count',
+        template=plotly_template,
+    )
+    st.plotly_chart(fig_fall_pie, use_container_width=True)
+
+    st.header("Meteorite Class Ratio (Top 10)")
+    class_pie = df_meteorites_filtered['recclass'].value_counts().nlargest(10).reset_index()
+    class_pie.columns = ['recclass', 'count']
+    fig_class_pie = px.pie(
+        class_pie,
+        names='recclass',
+        values='count',
+        template=plotly_template,
+    )
+    st.plotly_chart(fig_class_pie, use_container_width=True)
+
+    st.header("Meteorites Landing Map")
     fig_map = px.scatter_geo(
         df_meteorites_filtered,
         lat="reclat",
@@ -164,13 +209,11 @@ with tabs[0]:
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
-    st.header("📊 Meteorites Classes")
+    st.header("Meteorites Classes (Top 10)")
     top_classes = df_meteorites_filtered['recclass'].value_counts().nlargest(10).index
     df_top = df_meteorites_filtered[df_meteorites_filtered['recclass'].isin(top_classes)].copy()
-
     df_counts = df_top['recclass'].value_counts().reset_index()
     df_counts.columns = ['recclass', 'count']
-
     fig_bar = px.bar(
         df_counts,
         x="recclass",
@@ -181,12 +224,21 @@ with tabs[0]:
     )
     st.plotly_chart(fig_bar, use_container_width=True)
 
-    st.header("🏋️ Top 10 Heaviest Meteorites")
-    top_heavy = df_meteorites_filtered.nlargest(10, 'mass (g)')[['id', 'name', 'mass (g)', 'Date/Time', 'fall']].copy()
-    top_heavy['Year'] = top_heavy['Date/Time'].dt.year
-    st.dataframe(top_heavy.drop(columns=['Date/Time']))
+    st.header("Mass Distribution by Event Type")
+    fig_box = px.box(
+        df_meteorites_filtered,
+        x='fall',
+        y='mass (g)',
+        log_y=True,
+        template=plotly_template,
+        points='outliers',
+        color='fall',
+        title='Mass Distribution (log scale)',
+        labels={"fall": "Type", "mass (g)": "Mass (g)"}
+    )
+    st.plotly_chart(fig_box, use_container_width=True)
 
-    st.header("📉 Meteorites Mass Distribution")
+    st.header("Meteorites Mass Distribution")
     fig_mass = px.histogram(
         df_meteorites_filtered,
         x="mass (g)",
@@ -196,7 +248,7 @@ with tabs[0]:
     )
     st.plotly_chart(fig_mass, use_container_width=True)
 
-    st.header("📈 Average Meteorite Mass per Year")
+    st.header("Average Meteorite Mass per Year")
     avg_mass = (
         df_meteorites_filtered
         .groupby(pd.Grouper(key='Date/Time', freq='Y'))["mass (g)"]
@@ -212,6 +264,11 @@ with tabs[0]:
         labels={"Date/Time": "Year", "mass (g)": "Mass (g)"}
     )
     st.plotly_chart(fig_avg_mass, use_container_width=True)
+
+    st.header("Top 10 Heaviest Meteorites")
+    top_heavy = df_meteorites_filtered.nlargest(10, 'mass (g)')[['id', 'name', 'mass (g)', 'Date/Time', 'fall']].copy()
+    top_heavy['Year'] = top_heavy['Date/Time'].dt.year
+    st.dataframe(top_heavy.drop(columns=['Date/Time']))
 
 
 with tabs[1]:
@@ -260,7 +317,7 @@ with tabs[1]:
             - **Velocity vs. Impact Energy:** Bubble plot with energy-to-speed correlation.
             - **Cumulative Energy:** Line chart showing cumulative radiated energy growth over time.
             
-            **Sidebar Filters**
+            #### Filters Overview
             Use the **sidebar filters** to narrow the analysis by year range.  
             All visualizations update dynamically based on your selection.
             """
