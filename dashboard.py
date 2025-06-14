@@ -252,7 +252,6 @@ with tabs[1]:
             - `Velocity (km/s)`: Entry velocity of the bolide
             - `Altitude (km)`: Estimated altitude of the explosion
             - `Calculated Total Impact Energy (kt)`: Total calculated energy in kilotons
-            - `Velocity components`: Includes `vx`, `vy`, `vz` in km/s (if available)
 
             #### Charts Overview
             **Features and Visualizations:**
@@ -406,11 +405,10 @@ with tabs[2]:
     df_neo = df_neo.dropna(subset=["year"])
     df_neo["year"] = df_neo["year"].astype(int)
 
-    with st.expander("ℹ️ README - Nearest Earth Objects (NEO)"):
+    with st.expander("ℹ️ README - Nearest Earth Objects (NEOs)"):
         st.markdown(f"""
         ### NEO Analysis  
         This section analyzes near-Earth objects (asteroids) based on their physical characteristics, orbital data, and risk level.  
-        The dataset includes estimated size, velocity, miss distance, brightness, and hazard status.
                     
         **Data Source:** [NASA's Nearest Earth Objects (NEOs) Report](https://www.kaggle.com/datasets/sameepvani/nasa-nearest-earth-objects/data)
                     
@@ -433,10 +431,10 @@ with tabs[2]:
         **Features and Visualizations:**
         - **NEOs Trend Over Years:** Line chart showing yearly discoveries grouped by hazard status
         - **Hazardous Object Ratio:** Pie chart showing proportion of hazardous vs. non-hazardous objects
-        - **NEO Diameters Distribution:** Histogram (log scale) of mean diameters
+        - **NEOs Diameters Distribution:** Histogram (log scale) of mean diameters
         - **Velocity vs. Miss Distance:** Density heatmap showing speed vs. closest distance
         - **Brightness vs. Diameter:** Scatterplot highlighting hazardous objects
-        - **Cumulative NEO Discoveries:** Line chart showing total discoveries over time
+        - **Cumulative NEOs Discoveries:** Line chart showing total discoveries over time
         - **Velocity Distribution:** Histogram of NEO relative velocities
         - **Miss Distance:** Box plot showing distribution of closest approaches by hazard class
         - **Top 10 Closest Approaches:** Table of nearest NEO encounters with full metrics
@@ -486,7 +484,7 @@ with tabs[2]:
     )
     st.plotly_chart(fig_hazard, use_container_width=True)
 
-    st.header("NEO Diameters Distribution")
+    st.header("NEOs Diameters Distribution")
     fig_diameter = px.histogram(
         df_neo_filtered,
         x="mean_diameter",
@@ -525,7 +523,7 @@ with tabs[2]:
     )
     st.plotly_chart(fig_brightness, use_container_width=True)
 
-    st.header("Cumulative NEO Discoveries")
+    st.header("Cumulative NEOs Discoveries")
     df_cumulative = (
         df_neo_filtered.groupby("year").size().cumsum().reset_index(name="cumulative_count")
     )
