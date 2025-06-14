@@ -77,10 +77,11 @@ with tabs[0]:
             Filters and visual tools help uncover trends in meteorite activity over the years.
             The data is based on public records and includes both confirmed meteorite falls and finds.
 
+            **Data Source:** NASA's Meteroites Landings
+
             #### Dataset Overview
             **Base Info:** 
             - **Total entries**: {total_entries:,}
-            - **Entries with complete coordinates & date:**: {complete_entries:,}
             - **Year range**: {min_year} - {max_year}
             
             **Metrics Included:**  
@@ -133,7 +134,7 @@ with tabs[0]:
         df_meteorites['recclass'].isin(classes)
     ].copy()
 
-    st.header("Meteorites Trends Over Years")
+    st.header("Meteorites Trend Over Years")
     timeline = (
         df_meteorites_filtered
         .groupby([pd.Grouper(key='Date/Time', freq='Y'), 'fall'])
@@ -261,12 +262,11 @@ with tabs[1]:
 
             This dashboard provides an interactive analysis of **bolides** and **fireballs** — extremely bright meteors that often explode in the atmosphere.
 
-            **Data Source:** NASA's Fireball and Bolide Reports
+            **Data Source:** [NASA's Fireballs and Bolides Report](https://data.nasa.gov/dataset/meteorite-landings)
 
             #### Dataset Overview
             **Base Info:** 
             - **Total entries:** {total_entries:,}
-            - **Entries with complete coordinates & date:** {complete_entries:,}
             - **Year range:** {min_year} - {max_year}
 
             **Metrics Included:**  
@@ -444,6 +444,8 @@ with tabs[2]:
         ### NEO Analysis  
         This section analyzes near-Earth objects (asteroids) based on their physical characteristics, orbital data, and risk level.  
         The dataset includes estimated size, velocity, miss distance, brightness, and hazard status.
+                    
+        **Data Source:** [NASA's Nearest Earth Objects (NEOs) Report](https://www.kaggle.com/datasets/sameepvani/nasa-nearest-earth-objects/data)
                     
         #### Dataset Overview
         **Base Info:**  
