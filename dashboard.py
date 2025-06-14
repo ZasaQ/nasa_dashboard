@@ -99,7 +99,7 @@ with tabs[0]:
         "Year range (meteorites):",
         int(df_meteorites['Date/Time'].dt.year.min()),
         int(df_meteorites['Date/Time'].dt.year.max()),
-        (2000, 2013)
+        (2008, 2013)
     )
 
     fall_type = st.sidebar.multiselect("Event type:", df_meteorites['fall'].unique(), default=list(df_meteorites['fall'].unique()))
@@ -414,7 +414,6 @@ with tabs[2]:
         #### Dataset Overview
         **Base Info:**  
         - **Total entries:** {len(df_neo):,}  
-        - **Entries with complete coordinates:** {df_neo.dropna(subset=['orbiting_body', 'relative_velocity', 'miss_distance']).shape[0]:,}
         - **Year range in dataset:** {df_neo['year'].min()} - {df_neo['year'].max()}
 
         **Metrics Included:**  
