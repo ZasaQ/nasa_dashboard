@@ -246,12 +246,11 @@ with tabs[1]:
 
             **Metrics Included:**  
             - `Date/Time`: Timestamp of atmospheric entry
-            - `Latitude (deg.)`, `Longitude (deg.)`: Geographic coordinates of the event
-            - `Impact energy (kt)`: Kinetic energy released during atmospheric entry (kilotons of TNT)
             - `Radiated Energy (e10 J)`: Energy radiated in 10¹⁰ Joules
-            - `Velocity (km/s)`: Entry velocity of the bolide
+            - `Impact energy (kt)`: Kinetic energy released during atmospheric entry (kilotons of TNT)
             - `Altitude (km)`: Estimated altitude of the explosion
-            - `Calculated Total Impact Energy (kt)`: Total calculated energy in kilotons
+            - `Latitude (deg.)`, `Longitude (deg.)`: Geographic coordinates of the event
+            - `Velocity (km/s)`: Entry velocity of the bolide
 
             #### Charts Overview
             **Features and Visualizations:**
