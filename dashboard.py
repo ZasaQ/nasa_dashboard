@@ -59,7 +59,7 @@ with tabs[0]:
             Filters and visual tools help uncover trends in meteorite activity over the years.
             The data is based on public records and includes both confirmed meteorite falls and finds.
 
-            **Data Source:** NASA's Meteroites Landings
+            **Data Source:** [NASA's Meteroites Landings](https://data.nasa.gov/dataset/meteorite-landings)
 
             #### Dataset Overview
             **Base Info:** 
