@@ -3,24 +3,6 @@ import pandas as pd
 import plotly.express as px
 import re
 
-theme = st.sidebar.selectbox("🎨 Choose theme: ", ["Light", "Dark"])
-if theme == "Light":
-    bg_color = "#ffffff"
-    text_color = "#000000"
-    card_bg = "#f0f2f6"
-    plotly_template = "plotly_white"
-else:
-    bg_color = "#0e1117"
-    text_color = "#fafafa"
-    card_bg = "#262730"
-    plotly_template = "plotly_dark"
-
-st.markdown(f"""
-    <style>
-        .stApp {{ background-color: {bg_color}; color: {text_color}; }}
-        .block-container {{ background-color: {bg_color}; color: {text_color}; }}
-    </style>
-""", unsafe_allow_html=True)
 
 with st.expander("ℹ️ README - Dashboard description"):
     st.markdown("""
@@ -147,7 +129,6 @@ with tabs[0]:
         y="count",
         color="fall",
         markers=True,
-        template=plotly_template,
         labels={"Date/Time": "Year", "count": "Number of Meteorites", "fall": "Event Type"}
     )
     st.plotly_chart(fig_timeline, use_container_width=True)
@@ -159,7 +140,6 @@ with tabs[0]:
         fall_pie,
         names='fall',
         values='count',
-        template=plotly_template,
     )
     st.plotly_chart(fig_fall_pie, use_container_width=True)
 
@@ -170,7 +150,6 @@ with tabs[0]:
         class_pie,
         names='recclass',
         values='count',
-        template=plotly_template,
     )
     st.plotly_chart(fig_class_pie, use_container_width=True)
 
@@ -184,7 +163,6 @@ with tabs[0]:
         x="recclass",
         y="count",
         color="recclass",
-        template=plotly_template,
         hover_data={"count": False}
     )
     st.plotly_chart(fig_bar, use_container_width=True)
@@ -197,7 +175,6 @@ with tabs[0]:
         color="fall",
         size="mass (g)",
         hover_name="name",
-        template=plotly_template
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
@@ -209,7 +186,6 @@ with tabs[0]:
         nbins=100,
         log_y=True,
         barmode="overlay",
-        template=plotly_template,
         labels={
             "mass (g)": "Mass (g)",
             "fall": "Event Type"
@@ -230,7 +206,6 @@ with tabs[0]:
         y="mass (g)",
         color="fall",
         barmode="group",
-        template=plotly_template,
         labels={
             "Date/Time": "Year",
             "mass (g)": "Average Mass (g)",
@@ -309,7 +284,6 @@ with tabs[1]:
         x="Date/Time",
         y="Count",
         markers=True,
-        template=plotly_template,
         labels={"Date/Time": "Year", "Count": "Count"},
         title="Yearly Bolides Distribution"
     )
@@ -322,7 +296,6 @@ with tabs[1]:
             df_bolides_filtered, 
             x="Month", nbins=12,
             title="Monthly Bolids Distribution",
-            template=plotly_template,
             labels={"Month": "Month", "count": "Event Count"}
         )
         st.plotly_chart(fig_month, use_container_width=True)
@@ -332,7 +305,6 @@ with tabs[1]:
             x="DayOfWeek",
             category_orders={"DayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]},
             title="Day of Week Bolids Distribution",
-            template=plotly_template,
             labels={"DayOfWeek": "Day of Week", "count": "Event Count"}
         )
         st.plotly_chart(fig_day, use_container_width=True)
@@ -362,7 +334,6 @@ with tabs[1]:
         color="Impact energy (kt)",
         size="Radiated Energy (e10 J)",
         hover_name="Date/Time",
-        template=plotly_template,
         color_continuous_scale="OrRd",
         size_max=15
     )
@@ -382,7 +353,6 @@ with tabs[1]:
         y="Value",
         color="Metric",
         barmode="group",
-        template=plotly_template,
         labels={"Date/Time": "Date", "Value": "Value"}
     )
     st.plotly_chart(fig_multi_bar, use_container_width=True)
@@ -396,7 +366,6 @@ with tabs[1]:
         df_bolides_filtered,
         x="Velocity (km/s)",
         nbins=30,
-        template=plotly_template,
         labels={"Velocity (km/s)": "Velocity (km/s)"}
     )
     st.plotly_chart(fig_velocity, use_container_width=True)
@@ -409,7 +378,6 @@ with tabs[1]:
         y="Impact energy (kt)",
         size="Radiated Energy (e10 J)",
         color="Radiated Energy (e10 J)",
-        template=plotly_template,
         labels={"Velocity (km/s)": "Velocity (km/s)", "Impact energy (kt)": "Impact Energy (kt)"}
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
@@ -421,7 +389,6 @@ with tabs[1]:
         df_cumulative,
         x="Date/Time",
         y="Cumulative Energy",
-        template=plotly_template,
         labels={"Date/Time": "Year", "Cumulative Energy": "Cumulative Energy"}
     )
     st.plotly_chart(fig_cumulative, use_container_width=True)
@@ -501,7 +468,6 @@ with tabs[2]:
         y="count",
         color="hazardous",
         markers=True,
-        template=plotly_template,
         labels={
             "year": "Year",
             "count": "Number of NEOs",
@@ -517,7 +483,6 @@ with tabs[2]:
         hazard_counts,
         names="hazardous",
         values="count",
-        template=plotly_template
     )
     st.plotly_chart(fig_hazard, use_container_width=True)
 
@@ -527,7 +492,6 @@ with tabs[2]:
         x="mean_diameter",
         nbins=50,
         log_y=True,
-        template=plotly_template,
         labels={"mean_diameter": "Estimated Mean Diameter (m)"}
     )
     st.plotly_chart(fig_diameter, use_container_width=True)
@@ -540,7 +504,6 @@ with tabs[2]:
         nbinsx=50,
         nbinsy=50,
         color_continuous_scale="Viridis",
-        template=plotly_template,
         labels={
             "relative_velocity": "Relative Velocity (km/s)",
             "miss_distance": "Miss Distance (km)"
@@ -554,7 +517,6 @@ with tabs[2]:
         x="absolute_magnitude",
         y="mean_diameter",
         color="hazardous",
-        template=plotly_template,
         labels={
             "absolute_magnitude": "Absolute Magnitude (H)",
             "mean_diameter": "Mean Diameter (m)",
@@ -571,7 +533,6 @@ with tabs[2]:
         df_cumulative,
         x="year",
         y="cumulative_count",
-        template=plotly_template,
         labels={"year": "Year", "cumulative_count": "Cumulative Count"}
     )
     st.plotly_chart(fig_cumulative, use_container_width=True)
@@ -581,7 +542,6 @@ with tabs[2]:
         df_neo_filtered,
         x="relative_velocity",
         nbins=50,
-        template=plotly_template,
         labels={"relative_velocity": "Relative Velocity (km/s)"}
     )
     st.plotly_chart(fig_velocity_hist, use_container_width=True)
@@ -593,7 +553,6 @@ with tabs[2]:
         y="miss_distance",
         log_y=True,
         color='hazardous',
-        template=plotly_template,
         labels={
             "hazardous": "Potentially Hazardous",
             "miss_distance": "Miss Distance (km)"
