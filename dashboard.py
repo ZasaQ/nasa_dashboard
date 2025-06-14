@@ -40,25 +40,9 @@ with st.expander("ℹ️ README - Dashboard description"):
     - [NASA - Fireball and Bolide Reports (Kaggle)](https://www.kaggle.com/datasets/mexwell/nasa-fireball-and-bolide-reports/data)
     - [NASA - Nearest Earth Objects (Kaggle)](https://www.kaggle.com/datasets/sameepvani/nasa-nearest-earth-objects/data)
 
-    **Key Indicators:**
-    - **Meteorites**:
-        - Number and distribution over time
-        - Mass (g) and classification (`recclass`)
-        - Global landing locations
-    - **Bolides and Fireballs**:
-        - Yearly frequency of events
-        - Explosion energy (kt), entry speed (km/s), and explosion height (km)
-        - Geographic location and severity
-    - **NEOs**:
-        - Discovery trends over time
-        - Estimated size (mean diameter)
-        - Relative velocity vs. miss distance
-        - Potential hazard classification and brightness
-
     **Filters and Interactions:**
     - Year range selection for all datasets
     - Meteorite event type (Fell vs. Found)
-    - Inner Impact Energy filter for bolides
     - Hazard filter for NEOs
     - Thematic tab navigation (Meteorites / Bolides / NEOs)
     - Theme switching (light/dark)
@@ -112,15 +96,14 @@ with tabs[0]:
 
             #### Charts Overview
             **Features and Visualizations:**
-            - **Yearly Trends of Meteorites:** Line chart showing the number of meteorite events per year, categorized by event type (`Fell` or `Found`).
+            - **Meteorites Trend Over Years:** Line chart showing the number of meteorite events per year, categorized by event type (`Fell` or `Found`).
             - **Event Type Ratio:** Pie chart comparing proportions of meteorites that were found vs. those that fell.
-            - **Meteorite Class Ratio (Top 10):** Pie chart showing the top 10 most frequent meteorite classes by count.
-            - **Meteorite Class Distribution (Top 10):** Bar chart of top 10 meteorite classes by occurrence.
-            - **Global Landing Map:** Geospatial scatter plot showing where meteorites landed or were discovered, sized by mass and colored by type.
-            - **Mass Distribution by Type:** Box plot comparing mass distributions between `Fell` and `Found` meteorites (log scale).
-            - **Mass Histogram:** Histogram of meteorite masses using a logarithmic Y-axis for better distribution visibility.
-            - **Average Yearly Mass:** Line plot showing the average mass of meteorites per year.
-            - **Top 10 Heaviest Meteorites Table:** Data table listing the heaviest meteorites by mass with their names, year, and event type.
+            - **Meteorites Class Ratio (Top 10):** Pie chart showing the top 10 most frequent meteorite classes by count.
+            - **Meteorites Class Distribution (Top 10):** Bar chart of top 10 meteorite classes by occurrence.
+            - **Meteorites Landing Map:** Geospatial scatter plot showing where meteorites landed or were discovered, sized by mass and colored by type.
+            - **Meteorites Mass Distribution:** Box plot comparing mass distributions between `Fell` and `Found` meteorites (log scale).
+            - **Average Meteorites Mass:** Line plot showing the average mass of meteorites per year.
+            - **Top 10 Heaviest Meteorites:** Data table listing the heaviest meteorites by mass with their names, year, and event type.
 
             #### Filters Overview
             Use the **sidebar filters** to narrow the analysis by year range, event type and meteroit classess.  
@@ -150,7 +133,7 @@ with tabs[0]:
         df_meteorites['recclass'].isin(classes)
     ].copy()
 
-    st.header("Yearly Trends of Meteorites")
+    st.header("Meteorites Trends Over Years")
     timeline = (
         df_meteorites_filtered
         .groupby([pd.Grouper(key='Date/Time', freq='Y'), 'fall'])
@@ -179,7 +162,7 @@ with tabs[0]:
     )
     st.plotly_chart(fig_fall_pie, use_container_width=True)
 
-    st.header("Meteorite Class Ratio (Top 10)")
+    st.header("Meteorites Class Ratio (Top 10)")
     class_pie = df_meteorites_filtered['recclass'].value_counts().nlargest(10).reset_index()
     class_pie.columns = ['recclass', 'count']
     fig_class_pie = px.pie(
@@ -190,7 +173,7 @@ with tabs[0]:
     )
     st.plotly_chart(fig_class_pie, use_container_width=True)
 
-    st.header("Meteorites Classes Distribution (Top 10)")
+    st.header("Meteorites Class Distribution (Top 10)")
     top_classes = df_meteorites_filtered['recclass'].value_counts().nlargest(10).index
     df_top = df_meteorites_filtered[df_meteorites_filtered['recclass'].isin(top_classes)].copy()
     df_counts = df_top['recclass'].value_counts().reset_index()
@@ -217,46 +200,43 @@ with tabs[0]:
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
-    st.header("Mass Distribution by Event Type")
-    fig_box = px.box(
-        df_meteorites_filtered,
-        x='fall',
-        y='mass (g)',
-        log_y=True,
-        template=plotly_template,
-        points='outliers',
-        color='fall',
-        title='Mass Distribution (log scale)',
-        labels={"fall": "Type", "mass (g)": "Mass (g)"}
-    )
-    st.plotly_chart(fig_box, use_container_width=True)
-
     st.header("Meteorites Mass Distribution")
     fig_mass = px.histogram(
         df_meteorites_filtered,
         x="mass (g)",
+        color="fall",
         nbins=100,
         log_y=True,
-        template=plotly_template
+        barmode="overlay",
+        template=plotly_template,
+        labels={
+            "mass (g)": "Mass (g)",
+            "fall": "Event Type"
+        }
     )
     st.plotly_chart(fig_mass, use_container_width=True)
 
-    st.header("Average Meteorite Mass per Year")
-    avg_mass = (
+    st.header("Average Meteorites Mass")
+    avg_mass_by_type = (
         df_meteorites_filtered
-        .groupby(pd.Grouper(key='Date/Time', freq='Y'))["mass (g)"]
+        .groupby([pd.Grouper(key='Date/Time', freq='Y'), 'fall'])["mass (g)"]
         .mean()
         .reset_index()
     )
-    fig_avg_mass = px.line(
-        avg_mass,
+    fig_avg_mass_type = px.bar(
+        avg_mass_by_type,
         x="Date/Time",
         y="mass (g)",
-        markers=True,
+        color="fall",
+        barmode="group",
         template=plotly_template,
-        labels={"Date/Time": "Year", "mass (g)": "Mass (g)"}
+        labels={
+            "Date/Time": "Year",
+            "mass (g)": "Average Mass (g)",
+            "fall": "Event Type"
+        }
     )
-    st.plotly_chart(fig_avg_mass, use_container_width=True)
+    st.plotly_chart(fig_avg_mass_type, use_container_width=True)
 
     st.header("Top 10 Heaviest Meteorites")
     top_heavy = df_meteorites_filtered.nlargest(10, 'mass (g)')[['id', 'name', 'mass (g)', 'Date/Time', 'fall']].copy()
@@ -301,11 +281,11 @@ with tabs[1]:
 
             #### Charts Overview
             **Features and Visualizations:**
-            - **Temporal Trends of Bolides:** Timeline of events per year, month and weekday.
-            - **Heatmap (Month vs. Year):** Heatmap to detect seasonal trends and event clustering.
-            - **Impact Map:** Global geospatial scatter map of fireball events with energy scaling.
-            - **Metrics Over Time:** Aggregated impact, radiated energy, and velocity over time (monthly/yearly).
-            - **Top Events Table:** Top 10 events by radiated energy with impact and velocity shown.
+            - **Bolides Trend Over Years:** Timeline of events per year, month and weekday.
+            - **Monthly Event Distribution:** Heatmap to detect seasonal trends and event clustering.
+            - **Bolides Location Map:** Global geospatial scatter map of fireball events with energy scaling.
+            - **Bolides Metrics Over Years:** Aggregated impact, radiated energy, and velocity over time (monthly/yearly).
+            - **Top 10 Bolides by Various Metrics:** Top 10 events by radiated energy with impact and velocity shown.
             - **Velocity Distribution:** Histogram of fireball entry speeds.
             - **Velocity vs. Impact Energy:** Bubble plot with energy-to-speed correlation.
             - **Cumulative Energy:** Line chart showing cumulative radiated energy growth over time.
@@ -321,7 +301,7 @@ with tabs[1]:
     year_range_bolide = st.sidebar.slider("Year range (bolides and fireballs):", int(df_bolides_clean["Year"].min()), int(df_bolides_clean["Year"].max()), (2010, 2020))
     df_bolides_filtered = df_bolides_clean[(df_bolides_clean["Year"] >= year_range_bolide[0]) & (df_bolides_clean["Year"] <= year_range_bolide[1])]
 
-    st.header("Temporal Trends of Bolides")
+    st.header("Bolides Trend Over Years")
     df_bolides_filtered["Date/Time"] = pd.to_datetime(df_bolides_filtered["Date/Time"], errors="coerce", utc=True)
     df_yearly = df_bolides_filtered.set_index("Date/Time").resample("Y").size().reset_index(name="Count")
     fig_year_datetime = px.line(
@@ -357,7 +337,7 @@ with tabs[1]:
         )
         st.plotly_chart(fig_day, use_container_width=True)
 
-    st.header("Monthly Event Distribution by Year")
+    st.header("Monthly Event Distribution")
     df_heat = df_bolides_filtered.copy()
     df_heat["Month"] = df_heat["Date/Time"].dt.month
     df_heat["Year"] = df_heat["Date/Time"].dt.year
@@ -411,7 +391,7 @@ with tabs[1]:
     top_radiated = df_bolides.dropna(subset=["Radiated Energy (e10 J)"]).sort_values("Radiated Energy (e10 J)", ascending=False).head(10)
     st.dataframe(top_radiated[["Date/Time", "Radiated Energy (e10 J)", "Impact energy (kt)", "Velocity (km/s)"]])
 
-    st.header("🏃 Velocity Distribution")
+    st.header("Velocity Distribution")
     fig_velocity = px.histogram(
         df_bolides_filtered,
         x="Velocity (km/s)",
@@ -489,7 +469,7 @@ with tabs[2]:
         - **Brightness vs. Diameter:** Scatterplot highlighting hazardous objects
         - **Cumulative NEO Discoveries:** Line chart showing total discoveries over time
         - **Velocity Distribution:** Histogram of NEO relative velocities
-        - **Miss Distance by Hazard Type:** Box plot showing distribution of closest approaches by hazard class
+        - **Miss Distance:** Box plot showing distribution of closest approaches by hazard class
         - **Top 10 Closest Approaches:** Table of nearest NEO encounters with full metrics
 
         #### Filters Overview
@@ -590,7 +570,7 @@ with tabs[2]:
         x="year",
         y="cumulative_count",
         template=plotly_template,
-        labels={"year": "Year", "cumulative_count": "Cumulative NEO Discoveries"}
+        labels={"year": "Year", "cumulative_count": "Cumulative Count"}
     )
     st.plotly_chart(fig_cumulative, use_container_width=True)
 
@@ -604,7 +584,7 @@ with tabs[2]:
     )
     st.plotly_chart(fig_velocity_hist, use_container_width=True)
 
-    st.header("📦 Miss Distance by Hazard Type")
+    st.header("Miss Distance")
     fig_miss_box = px.box(
         df_neo_filtered,
         x="hazardous",
@@ -619,7 +599,7 @@ with tabs[2]:
     )
     st.plotly_chart(fig_miss_box, use_container_width=True)
 
-    st.header("🚨 Top 10 Closest Approaches")
+    st.header("Top 10 Closest Approaches")
     closest_neo = df_neo_filtered.nsmallest(10, "miss_distance")[
         ["name", "miss_distance", "relative_velocity", "absolute_magnitude", "mean_diameter", "hazardous"]
     ]
